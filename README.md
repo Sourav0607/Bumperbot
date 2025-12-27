@@ -40,14 +40,7 @@ ros2 launch bumperbot_description gazebo.launch.py
 - **Wheels**: Two continuous drive wheels (left and right)
 - **Casters**: Front and rear caster wheels for stability
 
-## Learning Notes
 
-This workspace is part of a Udemy course on ROS2 robotics. It demonstrates:
-- URDF/Xacro robot descriptions
-- ROS2 launch files
-- Robot state publisher
-- Gazebo integration
-- RViz visualization
 
 ## Repository
 
