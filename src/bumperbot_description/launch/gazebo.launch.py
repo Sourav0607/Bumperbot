@@ -12,6 +12,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 def generate_launch_description():
     
     bumperbot_description_dir = get_package_share_directory("bumperbot_description")
+    ros_distro = os.environ["ROS_DISTRO"]
+    is_ignition = "true" if ros_distro == "humble" else "false"
     
     model_arg = DeclareLaunchArgument(
         name="model",
@@ -19,7 +21,13 @@ def generate_launch_description():
         description="Absolute path to robot urdf file",
     )
     
-    robot_description = ParameterValue(Command(['xacro ', LaunchConfiguration('model')]))
+    robot_description = ParameterValue(Command([
+                                    'xacro ',
+                                    LaunchConfiguration('model'),
+                                    ' is_ignition:=',
+                                    is_ignition
+                                    ]),
+                                    value_type=str,)
         
     robot_state_publisher = Node(
         package='robot_state_publisher',
