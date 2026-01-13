@@ -71,6 +71,7 @@ class SimpleController(Node):
         self.x_ += d_s * math.cos(self.theta_)
         self.y_ += d_s * math.sin(self.theta_)
         
+        self.get_logger().info("-----------------------------------------")
         self.get_logger().info(f"Linear Velocity: {linear:.4f} m/s, Angular Velocity: {angular:.4f} rad/s")
         self.get_logger().info("-----------------------------------------")
         self.get_logger().info(f"Left Wheel Velocity: {v_left:.4f} rad/s, Right Wheel Velocity: {v_right:.4f} rad/s")
