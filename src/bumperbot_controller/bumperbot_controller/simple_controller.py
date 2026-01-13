@@ -8,7 +8,9 @@ import numpy as np
 from sensor_msgs.msg import JointState
 from rclpy.time import Time
 from rclpy.constants import S_TO_NS
+from nav_msgs.msg import Odometry
 import math
+from tf_transformations import quaternion_from_euler
 
 
 
@@ -35,9 +37,20 @@ class SimpleController(Node):
         self.wheel_command_publisher_ = self.create_publisher(Float64MultiArray, "simple_velocity_controller/commands", 10)
         self.vel_sub_ = self.create_subscription(Twist, "bumperbot_controller/cmd_vel", self.cmd_velCallback, 10)
         self.joint_sub_ = self.create_subscription(JointState, "joint_states", self.jointStateCallback, 10)
+        self.odom_pub_ = self.create_publisher(Odometry, "bumperbot_controller/odom", 10)
         
         self.speed_conversion_ = np.array([[self.wheel_radius_/2, self.wheel_radius_/2,], 
                                           [self.wheel_radius_/self.wheel_separation_, -self.wheel_radius_/self.wheel_separation_]])
+        
+        self.odom_msg_ = Odometry()
+        self.odom_msg_.header.frame_id = "odom"
+        self.odom_msg_.child_frame_id = "base_footprint"
+        self.odom_msg_.pose.pose.orientation.x = 0.0
+        self.odom_msg_.pose.pose.orientation.y = 0.0
+        self.odom_msg_.pose.pose.orientation.z = 0.0
+        self.odom_msg_.pose.pose.orientation.w = 1.0
+        
+        
         
         self.get_logger().info(f"Speed Conversion Matrix:\n{self.speed_conversion_}")
         
@@ -71,12 +84,17 @@ class SimpleController(Node):
         self.x_ += d_s * math.cos(self.theta_)
         self.y_ += d_s * math.sin(self.theta_)
         
-        self.get_logger().info("-----------------------------------------")
-        self.get_logger().info(f"Linear Velocity: {linear:.4f} m/s, Angular Velocity: {angular:.4f} rad/s")
-        self.get_logger().info("-----------------------------------------")
-        self.get_logger().info(f"Left Wheel Velocity: {v_left:.4f} rad/s, Right Wheel Velocity: {v_right:.4f} rad/s")
-        self.get_logger().info("-----------------------------------------")
-        self.get_logger().info(f"Odometry - X: {self.x_:.4f} m, Y: {self.y_:.4f} m, Theta: {self.theta_:.4f} rad")
+        q = quaternion_from_euler(0, 0, self.theta_)
+        self.odom_msg_.pose.pose.orientation.x = q[0]
+        self.odom_msg_.pose.pose.orientation.y = q[1]
+        self.odom_msg_.pose.pose.orientation.z = q[2]
+        self.odom_msg_.pose.pose.orientation.w = q[3]
+        self.odom_msg_.header.stamp = self.get_clock().now().to_msg()
+        self.odom_msg_.pose.pose.position.x = self.x_
+        self.odom_msg_.pose.pose.position.y = self.y_
+        self.odom_msg_.twist.twist.linear.x = linear
+        self.odom_msg_.twist.twist.angular.z = angular
+        self.odom_pub_.publish(self.odom_msg_)
         
 def main(args=None):
     rclpy.init(args=args)
