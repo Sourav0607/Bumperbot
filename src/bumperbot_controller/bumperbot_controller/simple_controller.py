@@ -8,6 +8,7 @@ import numpy as np
 from sensor_msgs.msg import JointState
 from rclpy.time import Time
 from rclpy.constants import S_TO_NS
+import math
 
 
 
@@ -26,6 +27,10 @@ class SimpleController(Node):
         self.left_wheel_prev_pos_ = 0.0
         self.right_wheel_prev_pos_ = 0.0
         self.prev_time_ =  self.get_clock().now()
+        
+        self.x_ = 0.0
+        self.y_ = 0.0
+        self.theta_ = 0.0
         
         self.wheel_command_publisher_ = self.create_publisher(Float64MultiArray, "simple_velocity_controller/commands", 10)
         self.vel_sub_ = self.create_subscription(Twist, "bumperbot_controller/cmd_vel", self.cmd_velCallback, 10)
@@ -60,8 +65,17 @@ class SimpleController(Node):
         linear = self.wheel_radius_ * (v_right + v_left) / 2
         angular = self.wheel_radius_ * (v_right - v_left) / self.wheel_separation_
         
+        d_s = self.wheel_radius_ * (dp_right + dp_left) / 2
+        d_theta = self.wheel_radius_ * (dp_right - dp_left) / self.wheel_separation_
+        self.theta_ += d_theta
+        self.x_ += d_s * math.cos(self.theta_)
+        self.y_ += d_s * math.sin(self.theta_)
+        
         self.get_logger().info(f"Linear Velocity: {linear:.4f} m/s, Angular Velocity: {angular:.4f} rad/s")
+        self.get_logger().info("-----------------------------------------")
         self.get_logger().info(f"Left Wheel Velocity: {v_left:.4f} rad/s, Right Wheel Velocity: {v_right:.4f} rad/s")
+        self.get_logger().info("-----------------------------------------")
+        self.get_logger().info(f"Odometry - X: {self.x_:.4f} m, Y: {self.y_:.4f} m, Theta: {self.theta_:.4f} rad")
         
 def main(args=None):
     rclpy.init(args=args)
