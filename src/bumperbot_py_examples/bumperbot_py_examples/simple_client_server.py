@@ -30,10 +30,23 @@ class SimpleClientServerNode(Node):
         rclpy.shutdown()
         
 def main(args=None):
+    import sys
     rclpy.init(args=args)
     
-    a = 19
-    b = 6
+    # Get command line arguments (skip the first one which is the script name)
+    if len(sys.argv) < 3:
+        print("Usage: ros2 run bumperbot_py_examples simple_client_node <a> <b>")
+        print("Example: ros2 run bumperbot_py_examples simple_client_node 6 7")
+        rclpy.shutdown()
+        return
+    
+    try:
+        a = int(sys.argv[1])
+        b = int(sys.argv[2])
+    except ValueError:
+        print("Error: Both arguments must be integers")
+        rclpy.shutdown()
+        return
     
     simple_client_server_node = SimpleClientServerNode(a, b)
     
