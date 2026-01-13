@@ -18,6 +18,7 @@
   <depend>tf2_ros</depend>
   <depend>geometry_msgs</depend>
   <depend>std_msgs</depend>
+  <exec_depend>bumperbot_msgs</exec_depend>
   
 
   <export>
