@@ -5,6 +5,9 @@ from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import Twist
 import numpy as np
+from sensor_msgs.msg import JointState
+from rclpy.time import Time
+from rclpy.constants import S_TO_NS
 
 
 
@@ -20,8 +23,13 @@ class SimpleController(Node):
         
         self.get_logger().info(f"Wheel Radius: {self.wheel_radius_}, Wheel Separation: {self.wheel_separation_}")
         
+        self.left_wheel_prev_pos_ = 0.0
+        self.right_wheel_prev_pos_ = 0.0
+        self.prev_time_ =  self.get_clock().now()
+        
         self.wheel_command_publisher_ = self.create_publisher(Float64MultiArray, "simple_velocity_controller/commands", 10)
         self.vel_sub_ = self.create_subscription(Twist, "bumperbot_controller/cmd_vel", self.cmd_velCallback, 10)
+        self.joint_sub_ = self.create_subscription(JointState, "joint_states", self.jointStateCallback, 10)
         
         self.speed_conversion_ = np.array([[self.wheel_radius_/2, self.wheel_radius_/2,], 
                                           [self.wheel_radius_/self.wheel_separation_, -self.wheel_radius_/self.wheel_separation_]])
@@ -36,6 +44,24 @@ class SimpleController(Node):
         wheel_speed_msg = Float64MultiArray()
         wheel_speed_msg.data = [wheel_speed[1,0], wheel_speed[0,0]]
         self.wheel_command_publisher_.publish(wheel_speed_msg)
+        
+    def jointStateCallback(self, msg):
+        dp_left = msg.position[1] - self.left_wheel_prev_pos_
+        dp_right = msg.position[0] - self.right_wheel_prev_pos_
+        dt = Time.from_msg(msg.header.stamp) - self.prev_time_
+        
+        self.left_wheel_prev_pos_ = msg.position[1]
+        self.right_wheel_prev_pos_ = msg.position[0]
+        self.prev_time_ = Time.from_msg(msg.header.stamp)
+        
+        v_left = dp_left / (dt.nanoseconds / S_TO_NS)
+        v_right = dp_right / (dt.nanoseconds / S_TO_NS)
+        
+        linear = self.wheel_radius_ * (v_right + v_left) / 2
+        angular = self.wheel_radius_ * (v_right - v_left) / self.wheel_separation_
+        
+        self.get_logger().info(f"Linear Velocity: {linear:.4f} m/s, Angular Velocity: {angular:.4f} rad/s")
+        self.get_logger().info(f"Left Wheel Velocity: {v_left:.4f} rad/s, Right Wheel Velocity: {v_right:.4f} rad/s")
         
 def main(args=None):
     rclpy.init(args=args)
