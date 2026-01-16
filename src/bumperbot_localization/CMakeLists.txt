@@ -18,8 +18,20 @@ ament_python_install_package(${PROJECT_NAME})
 
 install(PROGRAMS
   ${PROJECT_NAME}/kalman_filter.py
+  ${PROJECT_NAME}/imu_republisher.py
   DESTINATION lib/${PROJECT_NAME}
 
+)
+
+
+install(
+  DIRECTORY include
+  DESTINATION include
+)
+
+install(
+  DIRECTORY launch config
+  DESTINATION share/${PROJECT_NAME}
 )
 
 
